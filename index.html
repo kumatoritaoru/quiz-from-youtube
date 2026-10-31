@@ -205,8 +205,7 @@ function makeWav(notes, gap, len) {
 }
 const SFX = {
   ok: makeWav([523.25, 659.25, 783.99, 1046.5], 0.09, 0.6),   // ピロリロン♪（ド・ミ・ソ・ド）
-  retry: makeWav([392, 330], 0.14, 0.35),                       // ポポン（やさしく低め）
-  beep: makeWav([880], 0, 0.12)                                 // プッ（カウントダウンの 3 と 2）
+  retry: makeWav([392, 330], 0.14, 0.35)                        // ポポン（やさしく低め）
 };
 const sfx = new Audio(), voicePlayer = new Audio();
 function playSfx(name) {
@@ -505,19 +504,14 @@ function goNext() {
 }
 
 const COUNT_MS = 700;           // カウントダウン 1つぶんの長さ
-// 3「プッ」→ 2「プッ」→ 1（音なし）→ 青く光る。
-// 音が録音に入ったり iPad の聞き取りが止まったりしないよう、マイクは 2 の音が鳴りおわってから開く
-async function countdown(c, onBeepsDone) {
-  let told = false;
-  const tell = () => { if (!told) { told = true; onBeepsDone && onBeepsDone(); } };
+// 3 → 2 → 1 → 青く光る（音は鳴らさない。聞き取り中に音を鳴らすと iPad の聞き取りが止まるため）
+// カウントダウンの間に、裏でマイクの準備をすませる
+async function countdown(c) {
   for (let n = 3; n >= 1; n--) {
-    if (!c.listening) { tell(); return; }
+    if (!c.listening) return;
     c.count = n; render();
-    if (n >= 2) playSfx('beep');
-    if (n === 2) { await sleep(250); tell(); await sleep(COUNT_MS - 250); }
-    else await sleep(COUNT_MS);
+    await sleep(COUNT_MS);
   }
-  tell();
   c.count = 0;
   if (c.listening) { c.micOpen = true; logEv('どうぞ'); render(); }
 }
@@ -551,7 +545,7 @@ async function startListening() {
     liveText = t.trim();
     got = liveText ? [liveText] : [];
     if (PARENT) render();
-    stopSoon(c.micOpen ? 1500 : 1500 + COUNT_MS);   // 話しおわって 1.5秒 しずかなら 終わり（カウント中は待つ）
+    stopSoon(c.micOpen ? 1500 : 1500 + COUNT_MS * 3);   // 話しおわって 1.5秒 しずかなら 終わり（カウント中は待つ）
   };
   rec.onerror = e => {
     lastErr = e.error || 'unknown';
@@ -577,15 +571,14 @@ async function startListening() {
   };
   c.listening = true;
   render();
-  await new Promise(r => countdown(c, r));   // 画面に 3 → 2 → 1 → 青く光る（プッ・プッ が鳴りおわるまで待つ）
-  if (!c.listening) { rec = null; return; }
+  countdown(c);                 // 画面に 3 → 2 → 1 → 青く光る
   recorder = RECORD ? await startRecorder() : null;   // 自分の声も いっしょに録音
   setTimeout(() => {            // マイクを開く
     try {
-      rec.start(); stopSoon(6000 + COUNT_MS);   // カウントダウン後 6秒 なにも聞こえなければ 終わり
+      rec.start(); stopSoon(6000 + COUNT_MS * 3);   // カウントダウン後 6秒 なにも聞こえなければ 終わり
     }
     catch (e) { lastErr = 'start-failed'; c.listening = false; rec = null; stopRecorder(recorder); render(); }
-  }, 30);
+  }, 250);
 }
 
 // ---------- 動画の場面を流す ----------
