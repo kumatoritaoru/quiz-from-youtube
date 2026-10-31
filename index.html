@@ -232,7 +232,17 @@ function unlockAudio() {      // iPad は 最初のタップの中で一度鳴�
 }
 
 // ---------- 自分の声の録音 ----------
-const RECORD = !/[?&]rec=0/.test(location.search) && !!(navigator.mediaDevices && window.MediaRecorder);
+// 自分の声の録音は、iPad の聞き取りを止めてしまう（aborted）ので ふだんは オフ。?rec=1 のときだけ ためしに オン
+const REC_OFF_KEY = 'mm_rec_off';
+let recBlocked = false;
+try {
+  if (/[?&]rec=reset/.test(location.search)) localStorage.removeItem(REC_OFF_KEY);   // ?rec=reset で 録音の ブロックを 解除
+  recBlocked = localStorage.getItem(REC_OFF_KEY) === '1';
+} catch (e) {}
+const RECORD = /[?&]rec=1/.test(location.search) && !recBlocked && !!(navigator.mediaDevices && window.MediaRecorder);
+let recordOn = RECORD;          // 聞き取りが 打ち切られたら 自動で録音を止める（開きなおしても オフのまま）
+let micFail = 0;                // マイクに音がとどかなかった回数（つづけて）
+const RESUME_KEY = 'mm_resume';
 async function startRecorder() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -311,7 +321,7 @@ setInterval(() => {
     $('fill').style.width = Math.min(100, t / d * 100) + '%';
     if (!marksDrawn) {
       marksDrawn = true;
-      $('marks').innerHTML = DATA.breaks.map((b, i) => '<div class="mark" id="mk' + i + '" style="left:' + Math.min(100, b.time / d * 100) + '%"></div>').join('');
+      $('marks').innerHTML = DATA.breaks.map((b, i) => '<div class="mark' + (i < bi ? ' done' : '') + '" id="mk' + i + '" style="left:' + Math.min(100, b.time / d * 100) + '%"></div>').join('');
     }
   }
   // 広告の見分け：「再生中」なのに本編の時間が1.2秒以上進まない → 広告とみなして、スキップボタンを押せるようにする
@@ -580,6 +590,31 @@ function celebrate() {
   setTimeout(() => el.remove(), 1900);
 }
 
+// iPad の マイクが 止まったときは、いまの位置を おぼえて ページを 開きなおす（これが いちばん確実に なおる）
+function micReset() {
+  show('<div class="center"><button class="round go" data-act="reload" aria-label="マイクを なおす" style="width:150px;height:150px">' +
+    '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>' +
+    '</button>' + (PARENT ? '<p class="ja">マイクが 反応しなくなったので、ページを 開きなおします。つづきから はじまります。</p>' : '') + '</div>');
+  speak("Oops! Let's fix the microphone. Tap the button!");
+}
+function reloadKeepingPlace() {
+  try {
+    const b = DATA.breaks[bi];
+    // クイズの とちゅうなら、そのクイズの 少し前から やりなおす
+    const t = mode === 'watch' ? player.getCurrentTime() : Math.max(0, (b ? b.time : player.getCurrentTime()) - 3);
+    sessionStorage.setItem(RESUME_KEY, JSON.stringify({ videoId: DATA.videoId, t, bi }));
+  } catch (e) {}
+  location.reload();
+}
+function takeResume() {
+  try {
+    const r = JSON.parse(sessionStorage.getItem(RESUME_KEY) || 'null');
+    sessionStorage.removeItem(RESUME_KEY);
+    return r && r.videoId === DATA.videoId ? r : null;
+  } catch (e) { return null; }
+}
+const resumeAt = (DATA && DATA.videoId) ? takeResume() : null;
+
 function goNext() {
   if (quiz.good >= quiz.goal) clearScreen(); else nextQuestion();
 }
@@ -604,23 +639,24 @@ async function startListening() {
   lastErr = ''; liveText = ''; evLog = []; evT0 = Date.now();
   c.micOpen = false;
   c.count = 3;                  // 3・2・1 のカウントダウン中に マイクの準備をすませる
+  if (rec) { try { rec.abort(); } catch (e) {} rec = null; }   // 前の聞き取りが のこっていたら止める
   rec = new SR();
   rec.lang = 'en-US';
   rec.continuous = true;        // iPad は 1回きりモードだと すぐ切れることがあるので、つづけて聞く
   rec.interimResults = true;    // とちゅうの結果も受けとる（iPad は最後の結果が来ないことがある）
-  let got = [], silence = null, denied = false, stopped = false, recorder = null;
+  let got = [], silence = null, denied = false, stopped = false, recorder = null, heardAny = false;
   const stopSoon = ms => { clearTimeout(silence); silence = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, ms); };
   const hardStop = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, 9000);
   // マイクが本当に聞きはじめたら、青く光らせる（音は鳴らさない）
   const markOpen = () => { c.audioReady = true; };   // iPad が聞きはじめた（青く光るのは カウントダウンのあと）
   const opened = name => { logEv(name); markOpen(); };
   rec.onstart = () => logEv('start');
-  rec.onaudiostart = () => opened('マイク ON');
-  rec.onsoundstart = () => opened('音を検知');
-  rec.onspeechstart = () => opened('声を検知');
+  rec.onaudiostart = () => opened('マイク ON');      // マイクが開いただけでは「音がとどいた」とは数えない
+  rec.onsoundstart = () => { opened('音を検知'); heardAny = true; };
+  rec.onspeechstart = () => { opened('声を検知'); heardAny = true; };
   rec.onspeechend = () => logEv('声 おわり');
   rec.onresult = e => {
-    logEv('結果');
+    logEv('結果'); heardAny = true;
     let t = '';
     for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' ';
     liveText = t.trim();
@@ -631,7 +667,7 @@ async function startListening() {
   rec.onerror = e => {
     lastErr = e.error || 'unknown';
     logEv('エラー ' + lastErr);
-    if (lastErr === 'not-allowed' || lastErr === 'service-not-allowed' || lastErr === 'audio-capture') denied = true;
+    if (lastErr === 'not-allowed' || lastErr === 'service-not-allowed') denied = true;
   };
   rec.onend = async () => {
     logEv('end');
@@ -647,13 +683,25 @@ async function startListening() {
         '（' + esc(lastErr) + '）</p><button class="btn btn-blue" data-act="back">もどる</button></div>');
       return;
     }
+    if (!heardAny) {
+      // マイクの音が まったく とどいていない（iPad の マイクが 止まった状態）
+      micFail++;
+      logEv('マイクに音が とどいていない ×' + micFail);
+      if (recordOn) {                                                          // まずは 録音を止めて 立ちなおりを ためす
+        recordOn = false; logEv('録音を止めて やりなおす');
+        try { localStorage.setItem(REC_OFF_KEY, '1'); } catch (e) {}           // ページを 開きなおしても オフのまま
+      }
+      if (micFail >= 2) { micReset(); return; }                               // それでもダメなら ページを開きなおす
+      noInput(); return;
+    }
+    micFail = 0;
     if (!got.length || !got[0].trim()) { noInput(); return; }
     afterAnswer(judge(got));
   };
   c.listening = true;
   render();
   countdown(c);                 // 画面に 3 → 2 → 1 → 青く光る
-  recorder = RECORD ? await startRecorder() : null;   // 自分の声も いっしょに録音
+  recorder = recordOn ? await startRecorder() : null;   // 自分の声も いっしょに録音
   setTimeout(() => {            // マイクを開く
     try {
       rec.start(); stopSoon(6000 + COUNT_MS * 3);   // カウントダウン後 6秒 なにも聞こえなければ 終わり
@@ -712,7 +760,10 @@ $('card').addEventListener('click', e => {
       if (!ready) return;
       unlockAudio();
       speak("Let's watch!");                     // 最初のタップで 読み上げと効果音を有効にする（iPad の決まり）
-      hide(); mode = 'watch'; player.playVideo(); break;
+      hide(); mode = 'watch';
+      if (resumeAt) { bi = resumeAt.bi || 0; player.seekTo(resumeAt.t || 0, true); }   // マイクを なおしたあとは つづきから
+      player.playVideo(); break;
+    case 'reload': reloadKeepingPlace(); break;
     case 'listen':
       if (c.q.kind === 'repeat' && !c.follow) playClip('intro');
       else { busy = true; render(); speak(c.follow ? c.q.text : c.q.q).then(() => { busy = false; render(); }); }
