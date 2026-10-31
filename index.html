@@ -93,6 +93,7 @@ h1{margin:0;font-size:24px;font-weight:800;line-height:1.3}
 .result{display:flex;justify-content:center;min-height:96px;align-items:center}
 .parent{border-top:2px dashed var(--line);padding-top:10px;font-size:14px;font-weight:700;color:var(--sub);line-height:1.6}
 .ring.wait{opacity:.35}
+.count{font-size:64px;font-weight:800;color:#fff;line-height:1}
 .heard-big{text-align:center;font-size:30px;font-weight:800;color:var(--blue-deep);background:var(--blue-soft);border-radius:20px;padding:14px 20px;line-height:1.35}
 </style>
 </head>
@@ -205,7 +206,7 @@ function makeWav(notes, gap, len) {
 const SFX = {
   ok: makeWav([523.25, 659.25, 783.99, 1046.5], 0.09, 0.6),   // ピロリロン♪（ド・ミ・ソ・ド）
   retry: makeWav([392, 330], 0.14, 0.35),                       // ポポン（やさしく低め）
-  start: makeWav([880, 1318.5], 0.07, 0.22)                     // ピコン（はなしていいよ の合図）
+  beep: makeWav([880], 0, 0.12)                                 // プッ（カウントダウンの 3 と 2）
 };
 const sfx = new Audio(), voicePlayer = new Audio();
 function playSfx(name) {
@@ -414,7 +415,8 @@ function render() {
   } else {
     h += '<div class="stage-row">';
     h += '<div><button class="round speak" data-act="listen" aria-label="もういちど きく"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.speak + '</button><div class="icon-label">きく</div></div>';
-    h += '<div><div class="ring' + (c.listening && c.micOpen ? ' on' : '') + ((busy || (c.listening && !c.micOpen)) ? ' wait' : '') + '"><button class="mic" data-act="mic" aria-label="はなす"' + (busy ? ' disabled' : '') + '>' + ICON.mic + '</button></div><div class="icon-label">はなす</div></div>';
+    h += '<div><div class="ring' + (c.listening && c.micOpen ? ' on' : '') + (busy ? ' wait' : '') + '"><button class="mic" data-act="mic" aria-label="はなす"' + (busy ? ' disabled' : '') + '>' +
+      (c.listening && c.count > 0 ? '<span class="count">' + c.count + '</span>' : ICON.mic) + '</button></div><div class="icon-label">はなす</div></div>';
     if (ask && c.tries > 0 && !c.sawScene) {
       h += '<div><button class="round scene" data-act="scene" aria-label="ばめんを みる"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.scene + '</button><div class="icon-label">みる</div></div>';
     }
@@ -502,12 +504,31 @@ function goNext() {
   if (quiz.good >= quiz.goal) clearScreen(); else nextQuestion();
 }
 
+const COUNT_MS = 700;           // カウントダウン 1つぶんの長さ
+// 3「プッ」→ 2「プッ」→ 1（音なし）→ 青く光る。
+// 音が録音に入ったり iPad の聞き取りが止まったりしないよう、マイクは 2 の音が鳴りおわってから開く
+async function countdown(c, onBeepsDone) {
+  let told = false;
+  const tell = () => { if (!told) { told = true; onBeepsDone && onBeepsDone(); } };
+  for (let n = 3; n >= 1; n--) {
+    if (!c.listening) { tell(); return; }
+    c.count = n; render();
+    if (n >= 2) playSfx('beep');
+    if (n === 2) { await sleep(250); tell(); await sleep(COUNT_MS - 250); }
+    else await sleep(COUNT_MS);
+  }
+  tell();
+  c.count = 0;
+  if (c.listening) { c.micOpen = true; logEv('どうぞ'); render(); }
+}
+
 async function startListening() {
   const c = quiz.cur;
   if (c.recUrl) { try { URL.revokeObjectURL(c.recUrl); } catch (e) {} c.recUrl = null; }
   speechSynthesis.cancel();
   lastErr = ''; liveText = ''; evLog = []; evT0 = Date.now();
   c.micOpen = false;
+  c.count = 3;                  // 3・2・1 のカウントダウン中に マイクの準備をすませる
   rec = new SR();
   rec.lang = 'en-US';
   rec.continuous = true;        // iPad は 1回きりモードだと すぐ切れることがあるので、つづけて聞く
@@ -515,8 +536,8 @@ async function startListening() {
   let got = [], silence = null, denied = false, stopped = false, recorder = null;
   const stopSoon = ms => { clearTimeout(silence); silence = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, ms); };
   const hardStop = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, 9000);
-  // マイクが本当に聞きはじめたら、青く光らせて「ピコン」と鳴らす
-  const markOpen = () => { if (!c.micOpen && c.listening) { c.micOpen = true; render(); playSfx('start'); logEv('ピコン'); } };
+  // マイクが本当に聞きはじめたら、青く光らせる（音は鳴らさない）
+  const markOpen = () => { c.audioReady = true; };   // iPad が聞きはじめた（青く光るのは カウントダウンのあと）
   const opened = name => { logEv(name); markOpen(); };
   rec.onstart = () => logEv('start');
   rec.onaudiostart = () => opened('マイク ON');
@@ -530,7 +551,7 @@ async function startListening() {
     liveText = t.trim();
     got = liveText ? [liveText] : [];
     if (PARENT) render();
-    stopSoon(1500);             // 話しおわって 1.5秒 しずかなら 終わり
+    stopSoon(c.micOpen ? 1500 : 1500 + COUNT_MS);   // 話しおわって 1.5秒 しずかなら 終わり（カウント中は待つ）
   };
   rec.onerror = e => {
     lastErr = e.error || 'unknown';
@@ -556,14 +577,15 @@ async function startListening() {
   };
   c.listening = true;
   render();
+  await new Promise(r => countdown(c, r));   // 画面に 3 → 2 → 1 → 青く光る（プッ・プッ が鳴りおわるまで待つ）
+  if (!c.listening) { rec = null; return; }
   recorder = RECORD ? await startRecorder() : null;   // 自分の声も いっしょに録音
-  setTimeout(() => {            // 読み上げ・動画の音が止まってから マイクを開く
+  setTimeout(() => {            // マイクを開く
     try {
-      rec.start(); stopSoon(6000);           // 6秒 なにも聞こえなければ 終わり
-      setTimeout(markOpen, 800);             // iPad が合図を出さないときの保険
+      rec.start(); stopSoon(6000 + COUNT_MS);   // カウントダウン後 6秒 なにも聞こえなければ 終わり
     }
     catch (e) { lastErr = 'start-failed'; c.listening = false; rec = null; stopRecorder(recorder); render(); }
-  }, 250);
+  }, 30);
 }
 
 // ---------- 動画の場面を流す ----------
