@@ -204,7 +204,8 @@ function makeWav(notes, gap, len) {
 }
 const SFX = {
   ok: makeWav([523.25, 659.25, 783.99, 1046.5], 0.09, 0.6),   // ピロリロン♪（ド・ミ・ソ・ド）
-  retry: makeWav([392, 330], 0.14, 0.35)                        // ポポン（やさしく低め）
+  retry: makeWav([392, 330], 0.14, 0.35),                       // ポポン（やさしく低め）
+  start: makeWav([880, 1318.5], 0.07, 0.22)                     // ピコン（はなしていいよ の合図）
 };
 const sfx = new Audio(), voicePlayer = new Audio();
 function playSfx(name) {
@@ -284,7 +285,7 @@ function onState(e) {
   $('playIcon').innerHTML = playing ? '<path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/>' : '<path d="M8 5v14l11-7z" fill="currentColor"/>';
   $('playBtn').setAttribute('aria-label', playing ? 'とめる' : 'さいせい');
   if (e.data === 0) {
-    if (mode === 'clip') return endClip();
+    if (mode === 'clip') { if (clip && clip.seen) endClip(); return; }
     if (mode === 'watch') { if (DATA.breaks[bi]) openQuiz(DATA.breaks[bi]); else endScreen(); }
   }
 }
@@ -316,7 +317,13 @@ setInterval(() => {
       if (t >= b.time) { player.pauseVideo(); openQuiz(b); }
     } else $('next').textContent = '';
   }
-  if (mode === 'clip' && clip && t >= clip.end) endClip();
+  if (mode === 'clip' && clip) {
+    if (!clip.seen) {
+      // 巻き戻しが終わって、本当にその場面が流れはじめたのを確認してから 終わりを見はる
+      if (t >= clip.start - 1 && t < clip.end) clip.seen = true;
+      else if (Date.now() - clip.at > 3000) { clip.at = Date.now(); player.seekTo(clip.start, true); player.playVideo(); }  // 3秒たっても移動しなければ もういちど
+    } else if (t >= clip.end) endClip();
+  }
 }, 250);
 
 $('playBtn').onclick = () => {
@@ -508,7 +515,9 @@ async function startListening() {
   let got = [], silence = null, denied = false, stopped = false, recorder = null;
   const stopSoon = ms => { clearTimeout(silence); silence = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, ms); };
   const hardStop = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, 9000);
-  const opened = name => { logEv(name); if (!c.micOpen) { c.micOpen = true; render(); } };
+  // マイクが本当に聞きはじめたら、青く光らせて「ピコン」と鳴らす
+  const markOpen = () => { if (!c.micOpen && c.listening) { c.micOpen = true; render(); playSfx('start'); logEv('ピコン'); } };
+  const opened = name => { logEv(name); markOpen(); };
   rec.onstart = () => logEv('start');
   rec.onaudiostart = () => opened('マイク ON');
   rec.onsoundstart = () => opened('音を検知');
@@ -551,7 +560,7 @@ async function startListening() {
   setTimeout(() => {            // 読み上げ・動画の音が止まってから マイクを開く
     try {
       rec.start(); stopSoon(6000);           // 6秒 なにも聞こえなければ 終わり
-      setTimeout(() => { if (c.listening && !c.micOpen) { c.micOpen = true; render(); } }, 800);
+      setTimeout(markOpen, 800);             // iPad が合図を出さないときの保険
     }
     catch (e) { lastErr = 'start-failed'; c.listening = false; rec = null; stopRecorder(recorder); render(); }
   }, 250);
@@ -560,7 +569,7 @@ async function startListening() {
 // ---------- 動画の場面を流す ----------
 function playClip(after) {
   const q = quiz.cur.q;
-  clip = { start: q.clip_start, end: q.clip_end, after };
+  clip = { start: q.clip_start, end: q.clip_end, after, seen: false, at: Date.now() };
   mode = 'clip'; hide();
   player.seekTo(clip.start, true);
   player.playVideo();
