@@ -184,6 +184,7 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const CHEER = ['Great job!', 'Awesome!', 'You got it!', 'Yay! Well done!', 'Super!'];
 const RETRY = ['Ooh, so close! Try again!', 'Almost! One more time!', 'Hmm, try again!'];
 if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+const TALK_RATE = 0.78;   // 読み上げの速さ（1.0 がふつう。小さいほど ゆっくり）
 function speak(text) {
   return new Promise(res => {
     if (!window.speechSynthesis || !text) return res();
@@ -191,10 +192,10 @@ function speak(text) {
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'en-US'; if (voice) u.voice = voice; u.rate = 0.95; u.pitch = 1.3;   // 少し高めで元気に
+      u.lang = 'en-US'; if (voice) u.voice = voice; u.rate = TALK_RATE; u.pitch = 1.3;   // 少し高めで元気に
       u.onend = fin; u.onerror = fin;
       speechSynthesis.speak(u);
-      setTimeout(fin, 4000 + text.length * 90);
+      setTimeout(fin, 4000 + text.length * 120);   // ゆっくり読むぶん、待ち時間も長めに
     } catch (e) { fin(); }
   });
 }
@@ -713,7 +714,9 @@ async function startListening() {
 // ---------- 動画の場面を流す ----------
 function playClip(after) {
   const q = quiz.cur.q;
-  clip = { start: q.clip_start, end: q.clip_end, after, seen: false, at: Date.now() };
+  // 終わりを少し長めに流す（字幕の時間は セリフの最後の音より 早めに切れていることが多いため）
+  const pad = q.kind === 'repeat' ? 1.0 : 0.6;
+  clip = { start: q.clip_start, end: q.clip_end + pad, after, seen: false, at: Date.now() };
   mode = 'clip'; hide();
   player.seekTo(clip.start, true);
   player.playVideo();
