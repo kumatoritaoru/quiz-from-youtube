@@ -93,6 +93,7 @@ h1{margin:0;font-size:24px;font-weight:800;line-height:1.3}
 .result{display:flex;justify-content:center;min-height:96px;align-items:center}
 .parent{border-top:2px dashed var(--line);padding-top:10px;font-size:14px;font-weight:700;color:var(--sub);line-height:1.6}
 .ring.wait{opacity:.35}
+.heard-big{text-align:center;font-size:30px;font-weight:800;color:var(--blue-deep);background:var(--blue-soft);border-radius:20px;padding:14px 20px;line-height:1.35}
 </style>
 </head>
 <body>
@@ -148,6 +149,8 @@ const ICON = {
   scene: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#EA6A0C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="2.5"/><path d="M10 9v5l4-2.5z" fill="#EA6A0C"/><path d="M8 21h8"/></svg>',
   play: '<svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="#fff"/></svg>',
   ok: '<svg width="96" height="96" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="#F5B300"/></svg>',
+  next: '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>',
+  myvoice: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 9a3 3 0 0 1 0 5M19.5 6.5a6.5 6.5 0 0 1 0 10"/></svg>',
   again: '<svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="#EA6A0C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>'
 };
 
@@ -156,9 +159,16 @@ let voice = null;
 function pickVoice() {
   if (!window.speechSynthesis) return;
   const vs = speechSynthesis.getVoices();
-  voice = vs.find(v => v.lang === 'en-US' && /Samantha|Ava|Allison|Susan|Nicky/.test(v.name)) ||
-          vs.find(v => v.lang === 'en-US') || vs.find(v => /^en/.test(v.lang)) || null;
+  const us = vs.filter(v => v.lang === 'en-US');
+  // 明るく聞こえる声を優先（高音質版がiPadに入っていればそれを使う）
+  const pref = [/Zoe.*(Premium|Enhanced)/i, /Ava.*(Premium|Enhanced)/i, /Samantha.*(Premium|Enhanced)/i, /(Premium|Enhanced)/i, /Zoe/i, /Ava/i, /Samantha/i, /Nicky/i];
+  voice = null;
+  for (const r of pref) { voice = us.find(v => r.test(v.name)); if (voice) break; }
+  voice = voice || us[0] || vs.find(v => /^en/.test(v.lang)) || null;
 }
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const CHEER = ['Great job!', 'Awesome!', 'You got it!', 'Yay! Well done!', 'Super!'];
+const RETRY = ['Ooh, so close! Try again!', 'Almost! One more time!', 'Hmm, try again!'];
 if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function speak(text) {
   return new Promise(res => {
@@ -167,11 +177,64 @@ function speak(text) {
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'en-US'; if (voice) u.voice = voice; u.rate = 0.85;
+      u.lang = 'en-US'; if (voice) u.voice = voice; u.rate = 0.95; u.pitch = 1.3;   // 少し高めで元気に
       u.onend = fin; u.onerror = fin;
       speechSynthesis.speak(u);
       setTimeout(fin, 4000 + text.length * 90);
     } catch (e) { fin(); }
+  });
+}
+
+function makeWav(notes, gap, len) {
+  const rate = 22050, total = Math.ceil(rate * (gap * (notes.length - 1) + len));
+  const buf = new ArrayBuffer(44 + total * 2), dv = new DataView(buf);
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + total * 2, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true);
+  dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, total * 2, true);
+  for (let i = 0; i < total; i++) {
+    const t = i / rate; let v = 0;
+    notes.forEach((f, k) => {
+      const tt = t - k * gap;
+      if (tt >= 0 && tt < len) v += (Math.sin(2 * Math.PI * f * tt) + 0.3 * Math.sin(4 * Math.PI * f * tt)) * Math.exp(-tt * 6) * Math.min(1, tt * 200);
+    });
+    dv.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v * 0.35)) * 32767, true);
+  }
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+const SFX = {
+  ok: makeWav([523.25, 659.25, 783.99, 1046.5], 0.09, 0.6),   // ピロリロン♪（ド・ミ・ソ・ド）
+  retry: makeWav([392, 330], 0.14, 0.35)                        // ポポン（やさしく低め）
+};
+const sfx = new Audio(), voicePlayer = new Audio();
+function playSfx(name) {
+  return new Promise(res => {
+    let done = false; const fin = () => { if (!done) { done = true; res(); } };
+    try { sfx.src = SFX[name]; sfx.onended = fin; sfx.play().catch(fin); setTimeout(fin, 1200); } catch (e) { fin(); }
+  });
+}
+function unlockAudio() {      // iPad は 最初のタップの中で一度鳴らすと、あとから自由に鳴らせる
+  [sfx, voicePlayer].forEach(a => { try { a.src = SFX.retry; a.volume = 0; a.play().then(() => { a.pause(); a.volume = 1; }).catch(() => { a.volume = 1; }); } catch (e) {} });
+}
+
+// ---------- 自分の声の録音 ----------
+const RECORD = !/[?&]rec=0/.test(location.search) && !!(navigator.mediaDevices && window.MediaRecorder);
+async function startRecorder() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream), chunks = [];
+    mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    mr.start();
+    return { stream, mr, chunks };
+  } catch (e) { logEv('ろくおん できない ' + (e.name || '')); return null; }
+}
+function stopRecorder(r) {
+  return new Promise(res => {
+    if (!r) return res(null);
+    const fin = () => { r.stream.getTracks().forEach(t => t.stop()); res(r.chunks.length ? URL.createObjectURL(new Blob(r.chunks, { type: r.mr.mimeType || 'audio/mp4' })) : null); };
+    if (r.mr.state === 'inactive') return fin();
+    r.mr.onstop = fin;
+    try { r.mr.stop(); } catch (e) { fin(); }
   });
 }
 
@@ -293,7 +356,7 @@ function openQuiz(b) {
   mode = 'quiz';
   const queue = buildQueue(b);
   if (!queue.length) { bi++; mode = 'watch'; player.playVideo(); return; }
-  quiz = { b, queue, idx: 0, good: 0, goal: Math.min(DATA.goal || 3, queue.filter(q => q.kind === 'ask').length || queue.length) };
+  quiz = { b, queue, idx: 0, good: 0, goal: Math.min(DATA.goal || 3, queue.filter(q => q.kind === 'ask').length || queue.length), first: true };
   nextQuestion();
 }
 
@@ -310,6 +373,7 @@ async function presentQuestion() {
   if (c.q.kind === 'repeat' && !c.follow) {
     busy = true; render();
     await sleep(300);
+    if (quiz.first) { quiz.first = false; await speak("Quiz time!"); }
     await speak('Can you repeat this?');
     busy = false;
     playClip('intro');
@@ -317,6 +381,7 @@ async function presentQuestion() {
   }
   busy = true; render();
   await sleep(300);
+  if (quiz.first) { quiz.first = false; await speak("Quiz time!"); }
   await speak(c.follow ? c.q.text : c.q.q);
   busy = false; render();
 }
@@ -327,8 +392,18 @@ function render() {
   let h = '<div class="row" style="justify-content:center"><div class="dots">' +
     Array.from({ length: quiz.goal }, (_, i) => '<div class="dot' + (i < quiz.good ? ' on' : '') + '" style="width:30px;height:30px"></div>').join('') + '</div></div>';
 
-  if (c.status === 'right') {
-    h += '<div class="result">' + ICON.ok + '</div>';
+  // iPad が聞き取った言葉（大きく表示）と、自分の声を聞くボタン
+  const heardBlock = () => {
+    if (c.heard === null || c.listening) return '';
+    let b = '<div class="heard-big" lang="en">' + (c.heard ? '“' + esc(c.heard) + '”' : '…') + '</div>';
+    if (c.recUrl) b += '<div class="row" style="justify-content:center"><div><button class="round scene" data-act="myvoice" aria-label="じぶんの こえを きく" style="border-color:#2563EB">' + ICON.myvoice + '</button><div class="icon-label">じぶんの こえ</div></div></div>';
+    return b;
+  };
+
+  if (c.status === 'right' || c.status === 'done') {
+    if (c.status === 'right') h += '<div class="result">' + ICON.ok + '</div>';
+    h += heardBlock();
+    h += '<div class="row" style="justify-content:center"><div><button class="round go" data-act="next" aria-label="つぎへ"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.next + '</button><div class="icon-label">つぎへ</div></div></div>';
   } else {
     h += '<div class="stage-row">';
     h += '<div><button class="round speak" data-act="listen" aria-label="もういちど きく"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.speak + '</button><div class="icon-label">きく</div></div>';
@@ -337,7 +412,7 @@ function render() {
       h += '<div><button class="round scene" data-act="scene" aria-label="ばめんを みる"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.scene + '</button><div class="icon-label">みる</div></div>';
     }
     h += '</div>';
-    if (c.tries > 0 && !c.listening && !busy) h += '<div class="result">' + ICON.again + '</div>';
+    h += heardBlock();
   }
 
   if (PARENT) {
@@ -380,26 +455,30 @@ async function afterAnswer(pass) {
     const counts = !c.follow && !(ask && c.sawScene);
     if (counts) { quiz.good++; addStar(); }
     render();
-    await speak(ask && q.model ? 'Great job! ' + q.model : 'Great job!');
-    busy = false;
-    return goNext();
+    await playSfx('ok');
+    await speak(pick(CHEER) + (ask && q.model ? ' ' + q.model : ''));
+    busy = false; render();
+    return;
   }
   const max = ask ? MAX_ASK : MAX_REPEAT;
   if (c.tries < max) {
     render();
-    await speak(ask ? 'Hmm. Try again!' : 'Almost! Try again!');
+    await playSfx('retry');
+    await speak(pick(RETRY));
     busy = false; render();
     if (!ask && !c.follow) playClip('intro');
     return;
   }
   if (!ask) {                                   // まねして いう は ダメでも先へ
-    await speak('Good try!');
-    busy = false;
-    return goNext();
+    c.status = 'done'; render();
+    await speak('Good try! Nice speaking!');
+    busy = false; render();
+    return;
   }
   // 質問に答えられなかった：場面を見て、おてほんを まねする。次のクイズで もういちど きく
   const p = loadPending(); p.push({ videoId: DATA.videoId, q }); savePending(p);
-  await speak("Let's watch it again.");
+  await playSfx('retry');
+  await speak("Let's watch it again!");
   busy = false;
   playClip('model');
 }
@@ -407,7 +486,8 @@ async function afterAnswer(pass) {
 // 声が入らなかった（マイクの不調・話すのが早すぎた など）ときは、回数に数えずにやり直し
 async function noInput() {
   busy = true; render();
-  await speak("I can't hear you. Say it again!");
+  quiz.cur.heard = '';
+  await speak("Oops, I can't hear you! Say it again!");
   busy = false; render();
 }
 
@@ -415,8 +495,9 @@ function goNext() {
   if (quiz.good >= quiz.goal) clearScreen(); else nextQuestion();
 }
 
-function startListening() {
+async function startListening() {
   const c = quiz.cur;
+  if (c.recUrl) { try { URL.revokeObjectURL(c.recUrl); } catch (e) {} c.recUrl = null; }
   speechSynthesis.cancel();
   lastErr = ''; liveText = ''; evLog = []; evT0 = Date.now();
   c.micOpen = false;
@@ -424,7 +505,7 @@ function startListening() {
   rec.lang = 'en-US';
   rec.continuous = true;        // iPad は 1回きりモードだと すぐ切れることがあるので、つづけて聞く
   rec.interimResults = true;    // とちゅうの結果も受けとる（iPad は最後の結果が来ないことがある）
-  let got = [], silence = null, denied = false, stopped = false;
+  let got = [], silence = null, denied = false, stopped = false, recorder = null;
   const stopSoon = ms => { clearTimeout(silence); silence = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, ms); };
   const hardStop = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, 9000);
   const opened = name => { logEv(name); if (!c.micOpen) { c.micOpen = true; render(); } };
@@ -447,10 +528,12 @@ function startListening() {
     logEv('エラー ' + lastErr);
     if (lastErr === 'not-allowed' || lastErr === 'service-not-allowed' || lastErr === 'audio-capture') denied = true;
   };
-  rec.onend = () => {
+  rec.onend = async () => {
     logEv('end');
     clearTimeout(silence); clearTimeout(hardStop);
-    rec = null; c.listening = false;
+    rec = null;
+    c.recUrl = await stopRecorder(recorder);
+    c.listening = false;
     if (denied) {
       show('<div class="center"><p class="big">マイクが つかえません</p><p class="ja">' +
         (lastErr === 'service-not-allowed'
@@ -464,12 +547,13 @@ function startListening() {
   };
   c.listening = true;
   render();
+  recorder = RECORD ? await startRecorder() : null;   // 自分の声も いっしょに録音
   setTimeout(() => {            // 読み上げ・動画の音が止まってから マイクを開く
     try {
       rec.start(); stopSoon(6000);           // 6秒 なにも聞こえなければ 終わり
       setTimeout(() => { if (c.listening && !c.micOpen) { c.micOpen = true; render(); } }, 800);
     }
-    catch (e) { lastErr = 'start-failed'; c.listening = false; rec = null; render(); }
+    catch (e) { lastErr = 'start-failed'; c.listening = false; rec = null; stopRecorder(recorder); render(); }
   }, 250);
 }
 
@@ -521,7 +605,8 @@ $('card').addEventListener('click', e => {
   switch (btn.dataset.act) {
     case 'start':
       if (!ready) return;
-      speak("Let's watch!");                     // 最初のタップで 読み上げを有効にする（iPad の決まり）
+      unlockAudio();
+      speak("Let's watch!");                     // 最初のタップで 読み上げと効果音を有効にする（iPad の決まり）
       hide(); mode = 'watch'; player.playVideo(); break;
     case 'listen':
       if (c.q.kind === 'repeat' && !c.follow) playClip('intro');
@@ -532,6 +617,10 @@ $('card').addEventListener('click', e => {
       if (c.listening) { if (rec) rec.stop(); } else startListening();
       break;
     case 'scene': playClip('scene'); break;
+    case 'myvoice':
+      if (c && c.recUrl) { speechSynthesis.cancel(); voicePlayer.src = c.recUrl; voicePlayer.volume = 1; voicePlayer.play().catch(() => {}); }
+      break;
+    case 'next': if (!busy) goNext(); break;
     case 'back': render(); break;
     case 'resume':
       speechSynthesis.cancel();
