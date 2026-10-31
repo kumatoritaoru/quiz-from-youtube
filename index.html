@@ -444,6 +444,11 @@ function render() {
     return b;
   };
 
+  // まねして いう は、長い文だと おぼえきれないので 英文を 大きく出しておく
+  if (q.kind === 'repeat' || c.follow) {
+    h += '<div class="prompt" lang="en" style="font-size:34px;line-height:1.35">\u201c' + esc(q.text) + '\u201d</div>';
+  }
+
   if (c.status === 'right' || c.status === 'done') {
     if (c.status === 'right') h += '<div class="result">' + ICON.ok + '</div>';
     h += heardBlock();
