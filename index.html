@@ -84,6 +84,15 @@ h1{margin:0;font-size:24px;font-weight:800;line-height:1.3}
 .cliptag{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:12px 24px;font-size:18px;font-weight:800;z-index:9}
 .cliptag[hidden]{display:none}
 @media (max-width:700px){.q{font-size:24px}.grid2{grid-template-columns:1fr}.card{padding:22px}}
+.stage-row{display:flex;align-items:center;justify-content:center;gap:36px;flex-wrap:wrap;padding:8px 0}
+.round{border:0;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.round.speak{width:120px;height:120px;background:var(--blue)}
+.round.scene{width:96px;height:96px;background:#fff;border:4px solid var(--orange)}
+.round.go{width:120px;height:120px;background:var(--orange)}
+.icon-label{font-size:15px;font-weight:800;color:var(--sub);text-align:center;margin-top:6px}
+.result{display:flex;justify-content:center;min-height:96px;align-items:center}
+.parent{border-top:2px dashed var(--line);padding-top:10px;font-size:14px;font-weight:700;color:var(--sub);line-height:1.6}
+.ring.wait{opacity:.35}
 </style>
 </head>
 <body>
@@ -104,6 +113,10 @@ h1{margin:0;font-size:24px;font-weight:800;line-height:1.3}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
       10びょう もどる
     </button>
+    <button class="btn btn-white" id="fwdBtn">
+      10びょう すすむ
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+    </button>
     <div class="track"><div class="fill" id="fill"></div><div id="marks"></div></div>
     <div class="next" id="next">じゅんびちゅう…</div>
   </div>
@@ -112,29 +125,66 @@ h1{margin:0;font-size:24px;font-weight:800;line-height:1.3}
 <div class="cliptag" id="cliptag" hidden>もんだいの ところを さいせい中…</div>
 
 <script>
-const DATA = {"videoId": "0gD-biH2gRE", "title": "B1 English Listening - 🌳Terraria", "goal": 5, "breaks": [{"time": 302.9, "questions": [{"kind": "repeat", "q": "Say this sentence.", "ja": "どうぞ いってみよう。", "clip_start": 27.0, "clip_end": 35.0, "text": "I'm going to name my character Kenzo"}, {"kind": "answer", "q": "What color is the hair?", "ja": "かみのけは なにいろ?", "clip_start": 50.5, "clip_end": 62.0, "accept": ["blue", "bright blue", "blu"]}, {"kind": "answer", "q": "What color are the eyes?", "ja": "めは なにいろ?", "clip_start": 65.3, "clip_end": 75.1, "accept": ["red", "read"]}, {"kind": "repeat", "q": "Say this sentence.", "ja": "このせかいを いってみよう。", "clip_start": 104.2, "clip_end": 111.3, "text": "I'll name this world English world"}, {"kind": "answer", "q": "What is the name of the person in the forest?", "ja": "もりの ひとの なまえは?", "clip_start": 136.3, "clip_end": 148.0, "accept": ["colin", "collin", "colon", "kolin"]}, {"kind": "mc", "q": "What color are the pants?", "ja": "ズボンは なにいろ?", "clip_start": 73.6, "clip_end": 85.0, "choices": ["Dark brown", "Bright blue", "Red", "Green"], "answer": 0}, {"kind": "order", "q": "Put the words in order.", "ja": "ならべかえてね。", "clip_start": 120.3, "clip_end": 127.0, "text": "I want this world to be big"}, {"kind": "answer", "q": "What came out of the rock?", "ja": "いわから なにが でてきた?", "clip_start": 217.1, "clip_end": 226.3, "accept": ["worm", "a worm", "warm"]}, {"kind": "mc", "q": "What did Kenzo kill with his sword?", "ja": "ケンゾーは けんで なにを たおした?", "clip_start": 253.5, "clip_end": 267.0, "choices": ["A slime", "A worm", "A squirrel", "A sunflower"], "answer": 0}]}, {"time": 606.9, "questions": [{"kind": "repeat", "q": "Say this sentence.", "ja": "このぶんをいってみよう。", "clip_start": 341.0, "clip_end": 350.0, "text": "Now I'll craft a workbench."}, {"kind": "repeat", "q": "Say this sentence.", "ja": "このぶんをいってみよう。", "clip_start": 448.3, "clip_end": 456.0, "text": "There's a worm in the house."}, {"kind": "answer", "q": "What is on the roof?", "ja": "やねのうえに なにがいますか?", "clip_start": 377.0, "clip_end": 389.0, "accept": ["slime", "a slime", "slime on the roof", "slimes"]}, {"kind": "answer", "q": "What does the zombie hold?", "ja": "ゾンビは なにを もっていますか?", "clip_start": 579.5, "clip_end": 590.0, "accept": ["torch", "a torch", "torches"]}, {"kind": "answer", "q": "What fell from the sky?", "ja": "そらから なにが おちましたか?", "clip_start": 567.7, "clip_end": 580.0, "accept": ["star", "a star", "stars", "fallen star", "fallen stars", "a fallen star"]}, {"kind": "mc", "q": "What does the NPC room need?", "ja": "NPCの へやには なにが ひつようですか?", "clip_start": 467.9, "clip_end": 482.0, "choices": ["a table, a chair, and light", "a bed, a sword, and a star", "a door, a rock, and a worm", "a tree, a bunny, and a hammer"], "answer": 0}, {"kind": "mc", "q": "What can the wooden hammer break?", "ja": "木のハンマーで なにを こわせますか?", "clip_start": 365.6, "clip_end": 377.0, "choices": ["back walls", "stars", "torches", "chairs"], "answer": 0}, {"kind": "mc", "q": "How many torches did he make?", "ja": "たいまつを いくつ つくりましたか?", "clip_start": 433.5, "clip_end": 445.0, "choices": ["45", "54", "652", "2"], "answer": 1}, {"kind": "order", "q": "Put the words in order.", "ja": "ことばを ただしい じゅんばんに ならべよう。", "clip_start": 503.5, "clip_end": 516.0, "text": "I'll build a wall right here."}]}, {"time": 904.6, "questions": [{"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 609.0, "clip_end": 616.0, "text": "I can summon a slime with this staff."}, {"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 643.5, "clip_end": 650.0, "text": "Oh, I love my slime."}, {"kind": "answer", "q": "What does the player plant? (acorns)", "ja": "プレイヤーはなにをうえますか?", "clip_start": 643.5, "clip_end": 665.0, "accept": ["acorns", "acorn", "trees", "a corns"]}, {"kind": "answer", "q": "Who is Harold? He is a ...?", "ja": "ハロルドはだれ? (しょうにん)", "clip_start": 725.8, "clip_end": 740.0, "accept": ["merchant", "a merchant", "the merchant"]}, {"kind": "mc", "q": "What did the slime kill?", "ja": "スライムはなにをたおしましたか?", "clip_start": 632.7, "clip_end": 645.0, "choices": ["A demon eye", "A bomb", "A chest", "A tree"], "answer": 0}, {"kind": "order", "q": "Put the words in order.", "ja": "ならべかえてね。", "clip_start": 696.7, "clip_end": 704.0, "text": "There's a zombie on the roof."}, {"kind": "mc", "q": "What was in the chest?", "ja": "たからばこにはなにがはいっていた?", "clip_start": 767.5, "clip_end": 778.7, "choices": ["An umbrella", "A slime staff", "A pickaxe", "A star"], "answer": 0}, {"kind": "answer", "q": "What can the player do with the umbrella? Jump and ...?", "ja": "かさでなにができる? (うく)", "clip_start": 782.4, "clip_end": 797.0, "accept": ["float", "flow", "floats"]}, {"kind": "mc", "q": "What do the recall potions do?", "ja": "リコールポーションはなにをする?", "clip_start": 826.1, "clip_end": 838.0, "choices": ["Take you back home", "Make you jump", "Kill zombies", "Grow trees"], "answer": 0}]}, {"time": 1203.7, "questions": [{"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 1121.5, "clip_end": 1129.0, "text": "This is my shark."}, {"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 1076.0, "clip_end": 1084.0, "text": "I need to find more life crystals."}, {"kind": "answer", "q": "What did he find that is yellow? He found some ...", "ja": "きいろいものをみつけたよ。なにをみつけた?", "clip_start": 980.6, "clip_end": 995.0, "accept": ["gold", "gold ore", "golden"]}, {"kind": "answer", "q": "What animal statue did he pick up?", "ja": "どのどうぶつのぞうをひろった?", "clip_start": 953.3, "clip_end": 970.0, "accept": ["duck", "a duck", "duck statue", "a duck statue", "dock"]}, {"kind": "answer", "q": "What is floating in a bubble?", "ja": "あわのなかでういているのはなに?", "clip_start": 1118.7, "clip_end": 1130.0, "accept": ["shark", "a shark", "shark pup", "my shark"]}, {"kind": "mc", "q": "What did he throw in the hole?", "ja": "あなになにをなげた?", "clip_start": 902.0, "clip_end": 915.0, "choices": ["A bomb", "A ball", "A shark", "A duck"], "answer": 0}, {"kind": "mc", "q": "How much health did he have after using one life crystal?", "ja": "ライフクリスタルをひとつつかうと、たいりょくはいくつ?", "clip_start": 1049.1, "clip_end": 1066.0, "choices": ["100", "120", "140", "160"], "answer": 1}, {"kind": "mc", "q": "What can he do with the breathing rod?", "ja": "いきをするぼうでなにができる?", "clip_start": 1090.3, "clip_end": 1108.0, "choices": ["Breathe underwater", "Fly in the sky", "Make gold", "Dig very fast"], "answer": 0}, {"kind": "order", "q": "Put the words in order.", "ja": "ことばをただしいじゅんばんにならべよう。", "clip_start": 1104.2, "clip_end": 1110.0, "text": "I can hit people with the breathing rod."}]}, {"time": 1326.4, "questions": [{"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 1204.0, "clip_end": 1210.0, "text": "I'll place these chests in this room."}, {"kind": "answer", "q": "What does he want to build at the end? He wants to build a ...", "ja": "さいごになにをつくりたいといっていますか?", "clip_start": 1219.5, "clip_end": 1232.0, "accept": ["sign", "a sign", "sine", "sign."]}, {"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 1252.3, "clip_end": 1258.0, "text": "I'll place my wooden walls."}, {"kind": "answer", "q": "Where does he go up to? He goes up on the ...", "ja": "どこにのぼりましたか?", "clip_start": 1232.3, "clip_end": 1242.0, "accept": ["roof", "the roof", "room", "rooftop"]}, {"kind": "answer", "q": "What did he run out of?", "ja": "なにがなくなりましたか?", "clip_start": 1242.3, "clip_end": 1252.0, "accept": ["wood", "would", "the wood", "wooden"]}, {"kind": "mc", "q": "How many chests does he have?", "ja": "チェストはいくつありますか?", "clip_start": 1200.5, "clip_end": 1212.0, "choices": ["One", "Two", "Three", "Four"], "answer": 1}, {"kind": "mc", "q": "What will he type on the signs?", "ja": "かんばんになにをかきますか?", "clip_start": 1263.4, "clip_end": 1275.0, "choices": ["Names of his friends", "Names of his supporters", "Names of potions", "Names of countries"], "answer": 1}, {"kind": "order", "q": "Put the words in order.", "ja": "ことばをならべかえよう。", "clip_start": 1224.3, "clip_end": 1230.0, "text": "I want to build a sign."}, {"kind": "repeat", "q": "Say this line.", "ja": "このせりふをいってみよう。", "clip_start": 1317.5, "clip_end": 1324.0, "text": "I will see you in the next video."}]}]};
+const DATA = {"videoId": "0gD-biH2gRE", "title": "B1 English Listening - 🌳Terraria", "goal": 3, "breaks": [{"time": 124.6, "questions": [{"kind": "ask", "clip_start": 6.8, "clip_end": 15.3, "q": "What game does Kenzo play?", "model": "He plays Terraria.", "accept": ["terraria", "terraria game"]}, {"kind": "ask", "clip_start": 51.2, "clip_end": 62.3, "q": "What color did Kenzo make his hair?", "model": "He made his hair bright blue.", "accept": ["blue", "bright blue"]}, {"kind": "ask", "clip_start": 66.0, "clip_end": 75.4, "q": "What color did Kenzo make the eyes?", "model": "He made the eyes red.", "accept": ["red", "red eyes"]}, {"kind": "ask", "clip_start": 74.3, "clip_end": 84.6, "q": "What color are the pants?", "model": "The pants are dark brown.", "accept": ["dark brown", "brown"]}, {"kind": "ask", "clip_start": 104.9, "clip_end": 114.2, "q": "What did Kenzo name the world?", "model": "He named the world English World.", "accept": ["english world", "english"]}, {"kind": "repeat", "clip_start": 88.5, "clip_end": 93.4, "text": "I'll make the shoes bright blue as well."}, {"kind": "repeat", "clip_start": 57.0, "clip_end": 61.8, "text": "Let's make some bright blue hair."}]}, {"time": 243.8, "questions": [{"kind": "ask", "clip_start": 137.0, "clip_end": 146.3, "q": "What is the person's name in the forest?", "model": "His name is Colin.", "accept": ["colin"]}, {"kind": "ask", "clip_start": 137.0, "clip_end": 146.3, "q": "What is the person's name in the forest?", "model": "The person is named Colin.", "accept": ["colin", "collin"]}, {"kind": "ask", "clip_start": 129.3, "clip_end": 138.3, "q": "Where are they at the start?", "model": "They are in a forest.", "accept": ["forest", "in a forest", "a forest"]}, {"kind": "ask", "clip_start": 163.8, "clip_end": 173.8, "q": "What did he chop down?", "model": "He chopped down a tree.", "accept": ["tree", "trees", "a tree"]}, {"kind": "ask", "clip_start": 183.2, "clip_end": 194.3, "q": "What did he get from the second tree?", "model": "He got one gold coin.", "accept": ["gold", "one gold", "gold coin", "a gold coin"]}, {"kind": "ask", "clip_start": 213.6, "clip_end": 225.3, "q": "What came out of the rock?", "model": "A worm came out of the rock.", "accept": ["worm", "a worm"]}, {"kind": "repeat", "clip_start": 147.0, "clip_end": 150.5, "text": "Let's talk to Colin."}, {"kind": "repeat", "clip_start": 217.8, "clip_end": 221.8, "text": "Oh, look, a worm."}]}, {"time": 364.9, "questions": [{"kind": "ask", "clip_start": 240.4, "clip_end": 247.3, "q": "What color is the slime?", "model": "The slime is green.", "accept": ["green", "green slime"]}, {"kind": "ask", "clip_start": 247.5, "clip_end": 256.3, "q": "How many gold coins does he have now?", "model": "He has three gold coins.", "accept": ["three", "three coins", "3"]}, {"kind": "ask", "clip_start": 269.3, "clip_end": 274.3, "q": "What does he want to build?", "model": "He wants to build a house.", "accept": ["a house", "house"]}, {"kind": "ask", "clip_start": 291.2, "clip_end": 298.3, "q": "What did he say to the bunny?", "model": "He said, I'm sorry, bunny.", "accept": ["i'm sorry", "im sorry", "sorry"]}, {"kind": "ask", "clip_start": 341.7, "clip_end": 353.3, "q": "What does he craft after the walls and the doors?", "model": "He crafts a workbench.", "accept": ["workbench", "a workbench", "work bench"]}, {"kind": "repeat", "clip_start": 261.9, "clip_end": 266.5, "text": "I killed the slime with my sword."}, {"kind": "repeat", "clip_start": 334.8, "clip_end": 338.3, "text": "I'll put a door right here."}]}, {"time": 484.4, "questions": [{"kind": "ask", "clip_start": 366.3, "clip_end": 376.3, "q": "What did he make with wood to break the back walls?", "model": "He made a wooden hammer.", "accept": ["wooden hammer", "a hammer", "hammer"]}, {"kind": "ask", "clip_start": 366.3, "clip_end": 376.3, "q": "What did he make to break the back walls?", "model": "He made a wooden hammer.", "accept": ["wooden hammer", "a hammer", "hammer"]}, {"kind": "ask", "clip_start": 382.3, "clip_end": 389.3, "q": "What was on the roof?", "model": "A slime was on the roof.", "accept": ["slime", "a slime", "slime on the roof"]}, {"kind": "ask", "clip_start": 399.4, "clip_end": 408.3, "q": "How many walls did he make?", "model": "He made 652 walls.", "accept": ["652", "six five two", "six hundred fifty two"]}, {"kind": "ask", "clip_start": 434.2, "clip_end": 441.3, "q": "How many torches did he make?", "model": "He made 54 torches.", "accept": ["54", "fifty four", "fifty-four"]}, {"kind": "ask", "clip_start": 464.5, "clip_end": 474.3, "q": "Who lives in this room?", "model": "Colin lives in this room.", "accept": ["colin", "collin", "colon"]}, {"kind": "repeat", "clip_start": 367.0, "clip_end": 371.3, "text": "I'll make a wooden hammer."}, {"kind": "repeat", "clip_start": 437.3, "clip_end": 440.9, "text": "I made 54 torches."}]}, {"time": 606.9, "questions": [{"kind": "ask", "clip_start": 554.0, "clip_end": 561.8, "q": "What did he say when he saw the zombie?", "model": "He said, \"Die, zombie!\"", "accept": ["die zombie", "die"]}, {"kind": "ask", "clip_start": 527.0, "clip_end": 538.1, "q": "What did he make for the new room?", "model": "He made a table and a chair.", "accept": ["table and chair", "table and a chair", "a table and a chair", "table", "chair"]}, {"kind": "ask", "clip_start": 571.9, "clip_end": 583.3, "q": "What fell from the sky?", "model": "A star fell from the sky.", "accept": ["star", "a star", "fallen star", "stars", "fallen stars"]}, {"kind": "ask", "clip_start": 494.5, "clip_end": 499.8, "q": "What did he place to make light?", "model": "He placed some torches.", "accept": ["torches", "torch", "some torches"]}, {"kind": "ask", "clip_start": 583.9, "clip_end": 588.3, "q": "What was the zombie holding?", "model": "The zombie was holding a torch.", "accept": ["torch", "a torch"]}, {"kind": "repeat", "clip_start": 527.0, "clip_end": 531.8, "text": "I'll make a table and a chair."}, {"kind": "repeat", "clip_start": 525.2, "clip_end": 529.3, "text": "Oh, now we have two rooms."}]}, {"time": 722.8, "questions": [{"kind": "ask", "clip_start": 606.1, "clip_end": 622.1, "q": "What did the slime staff summon?", "model": "It summoned a slime.", "accept": ["slime", "a slime", "my slime"]}, {"kind": "ask", "clip_start": 621.9, "clip_end": 631.8, "q": "Where did he summon the slime?", "model": "He summoned it by the zombies.", "accept": ["by the zombies", "zombies", "near the zombies", "by these zombies"]}, {"kind": "ask", "clip_start": 633.4, "clip_end": 644.2, "q": "What did the slime kill?", "model": "The slime killed the demon eye.", "accept": ["demon eye", "the demon eye", "eye", "a demon eye"]}, {"kind": "ask", "clip_start": 644.2, "clip_end": 652.4, "q": "What did he plant?", "model": "He planted acorns.", "accept": ["acorns", "acorn", "some acorns", "trees"]}, {"kind": "ask", "clip_start": 656.1, "clip_end": 659.4, "q": "What did he say to the slime?", "model": "He said, good job, slime.", "accept": ["good job", "good job slime"]}, {"kind": "repeat", "clip_start": 644.2, "clip_end": 648.3, "text": "Oh, I love my slime."}, {"kind": "repeat", "clip_start": 667.0, "clip_end": 671.4, "text": "I'll place a torch on this tree."}]}, {"time": 844.7, "questions": [{"kind": "ask", "clip_start": 726.5, "clip_end": 740.2, "q": "Who arrived at the room they built?", "model": "Harold the merchant arrived.", "accept": ["harold", "harold the merchant", "the merchant", "merchant"]}, {"kind": "ask", "clip_start": 768.2, "clip_end": 776.7, "q": "What did they find in the chest?", "model": "They found an umbrella.", "accept": ["umbrella", "an umbrella", "a umbrella"]}, {"kind": "ask", "clip_start": 775.6, "clip_end": 791.6, "q": "What can he do with the umbrella?", "model": "He can float with the umbrella.", "accept": ["float", "he can float", "attack"]}, {"kind": "ask", "clip_start": 807.9, "clip_end": 814.8, "q": "How many grenades are in the chest?", "model": "There are three grenades.", "accept": ["three", "3"]}, {"kind": "ask", "clip_start": 821.7, "clip_end": 835.8, "q": "What do the recall potions do?", "model": "They teleport him back home.", "accept": ["teleport", "teleport me home", "teleport home", "go home", "back home"]}, {"kind": "repeat", "clip_start": 755.7, "clip_end": 759.1, "text": "I'm going to jump down."}, {"kind": "repeat", "clip_start": 775.6, "clip_end": 779.2, "text": "I can attack with this umbrella."}]}, {"time": 959.9, "questions": [{"kind": "ask", "clip_start": 855.2, "clip_end": 866.3, "q": "What kind of ore did he find first?", "model": "He found tin ore.", "accept": ["tin", "tin ore"]}, {"kind": "ask", "clip_start": 901.2, "clip_end": 910.3, "q": "What did he throw in the hole?", "model": "He threw a bomb.", "accept": ["bomb", "a bomb", "bombs"]}, {"kind": "ask", "clip_start": 913.6, "clip_end": 929.6, "q": "What did he find when he got really deep?", "model": "He found topaz.", "accept": ["topaz", "a topaz"]}, {"kind": "ask", "clip_start": 942.9, "clip_end": 951.5, "q": "Who is the merchant?", "model": "Harold is the merchant.", "accept": ["harold", "harold the merchant"]}, {"kind": "ask", "clip_start": 950.4, "clip_end": 958.3, "q": "What did he see at the end?", "model": "He saw a duck statue.", "accept": ["duck statue", "a duck statue", "duck", "a duck"]}, {"kind": "repeat", "clip_start": 905.4, "clip_end": 909.7, "text": "I'm going to throw a bomb in this hole."}, {"kind": "repeat", "clip_start": 954.0, "clip_end": 957.8, "text": "Is that a duck statue?"}]}, {"time": 1084.6, "questions": [{"kind": "ask", "clip_start": 977.7, "clip_end": 993.3, "q": "What did the player find that was gold?", "model": "He found gold ore.", "accept": ["gold ore", "gold", "some gold"]}, {"kind": "ask", "clip_start": 996.5, "clip_end": 1006.3, "q": "What did the player pick up that was glowing?", "model": "He picked up glowing mushrooms.", "accept": ["mushrooms", "glowing mushrooms", "mushroom"]}, {"kind": "ask", "clip_start": 1012.4, "clip_end": 1021.3, "q": "What did the player throw?", "model": "He threw a glow stick.", "accept": ["glow stick", "a glow stick", "glow sticks"]}, {"kind": "ask", "clip_start": 1045.8, "clip_end": 1055.9, "q": "How much health did the player have at first?", "model": "He had 100 health.", "accept": ["100", "one hundred", "a hundred", "100 health"]}, {"kind": "ask", "clip_start": 1063.7, "clip_end": 1077.3, "q": "How many hearts did the player have at the end?", "model": "He had seven hearts.", "accept": ["7", "seven", "seven hearts"]}, {"kind": "repeat", "clip_start": 988.2, "clip_end": 991.8, "text": "I found some gold."}, {"kind": "repeat", "clip_start": 964.2, "clip_end": 968.8, "text": "This cave is huge."}]}, {"time": 1203.7, "questions": [{"kind": "ask", "clip_start": 1081.4, "clip_end": 1088.8, "q": "What is he going to open?", "model": "He is going to open the chest.", "accept": ["chest", "a chest", "the chest"]}, {"kind": "ask", "clip_start": 1091.0, "clip_end": 1102.0, "q": "What can he use to breathe underwater?", "model": "He uses a breathing rod.", "accept": ["breathing rod", "rod", "a breathing rod", "breathing"]}, {"kind": "repeat", "clip_start": 1083.7, "clip_end": 1088.5, "text": "I'm going to open the chest."}, {"kind": "ask", "clip_start": 1119.4, "clip_end": 1129.3, "q": "Where is the shark floating?", "model": "It's floating in a bubble.", "accept": ["bubble", "in a bubble", "a bubble"]}, {"kind": "ask", "clip_start": 1136.3, "clip_end": 1146.8, "q": "How much health does he have now?", "model": "He has 160 health.", "accept": ["160", "one hundred sixty", "one hundred and sixty", "hundred sixty", "a hundred sixty"]}, {"kind": "repeat", "clip_start": 1122.0, "clip_end": 1125.5, "text": "This is my shark."}, {"kind": "ask", "clip_start": 1161.4, "clip_end": 1169.8, "q": "What did he drop when he died?", "model": "He dropped his money.", "accept": ["money", "his money", "my money", "gold", "silver", "copper"]}]}, {"time": 1326.4, "questions": [{"kind": "ask", "clip_start": 1200.5, "clip_end": 1211.4, "q": "How many chests did he find?", "model": "He found two chests.", "accept": ["two", "2", "two chests"]}, {"kind": "ask", "clip_start": 1210.3, "clip_end": 1224.1, "q": "What did he find? Name one thing.", "model": "He found potions, bombs, and grenades.", "accept": ["potions", "bombs", "grenades", "shurikens", "potion", "bomb", "grenade", "shuriken"]}, {"kind": "ask", "clip_start": 1220.2, "clip_end": 1230.3, "q": "What does he want to build?", "model": "He wants to build a sign.", "accept": ["a sign", "sign"]}, {"kind": "ask", "clip_start": 1228.6, "clip_end": 1240.9, "q": "Where does he go up to?", "model": "He goes up on the roof.", "accept": ["the roof", "roof", "on the roof"]}, {"kind": "ask", "clip_start": 1243.0, "clip_end": 1252.3, "q": "What did he run out of?", "model": "He ran out of wood.", "accept": ["wood"]}, {"kind": "repeat", "clip_start": 1228.2, "clip_end": 1233.8, "text": "I'm going to craft a sign."}, {"kind": "repeat", "clip_start": 1316.7, "clip_end": 1322.8, "text": "I will see you in the next video."}]}]};
 const PASS_RATIO = 0.85;   // まねして いう：6語以下は全部、7語以上は1語までミスOK
-const MAX_SAY = 2;         // いってみよう：2回まで（おてほんは見ずに）
-const MAX_REPEAT = 3;      // まねして いう：3回まで
+const MAX_ASK = 2;         // 英語の質問に答える：2回まで
+const MAX_REPEAT = 3;      // まねして いう：3回まで（ダメでも先に進む）
 const REST_EVERY = 3;      // 3問に1回 ひとやすみ（まねして いう）
-const PENDING_KEY = 'mm_pending';
+const PENDING_KEY = 'mm_pending_v2';
+const PARENT = /[?&]parent=1/.test(location.search);
+let lastErr = '', liveText = '', evLog = [], evT0 = 0;
+function logEv(name) { evLog.push(((Date.now() - evT0) / 1000).toFixed(1) + 's ' + name); if (PARENT && quiz) render(); }   // ?parent=1 で おうちのひと用に文字を表示
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const words = s => String(s).toLowerCase().replace(/[\u2019]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const ICON = {
+  speak: '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="#fff"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  mic: '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  scene: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#EA6A0C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="2.5"/><path d="M10 9v5l4-2.5z" fill="#EA6A0C"/><path d="M8 21h8"/></svg>',
+  play: '<svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="#fff"/></svg>',
+  ok: '<svg width="96" height="96" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="#F5B300"/></svg>',
+  again: '<svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="#EA6A0C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>'
+};
+
+// ---------- 英語の読み上げ（iPad の Safari の声） ----------
+let voice = null;
+function pickVoice() {
+  if (!window.speechSynthesis) return;
+  const vs = speechSynthesis.getVoices();
+  voice = vs.find(v => v.lang === 'en-US' && /Samantha|Ava|Allison|Susan|Nicky/.test(v.name)) ||
+          vs.find(v => v.lang === 'en-US') || vs.find(v => /^en/.test(v.lang)) || null;
+}
+if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text) {
+  return new Promise(res => {
+    if (!window.speechSynthesis || !text) return res();
+    let done = false; const fin = () => { if (!done) { done = true; res(); } };
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US'; if (voice) u.voice = voice; u.rate = 0.85;
+      u.onend = fin; u.onerror = fin;
+      speechSynthesis.speak(u);
+      setTimeout(fin, 4000 + text.length * 90);
+    } catch (e) { fin(); }
+  });
+}
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let player = null, ready = false, mode = 'start', bi = 0, quiz = null, clip = null, rec = null, marksDrawn = false;
+let player = null, ready = false, mode = 'start', bi = 0, quiz = null, clip = null, rec = null, marksDrawn = false, busy = false;
 let stars = 0;
 try { stars = parseInt(localStorage.getItem('mm_stars') || '0', 10) || 0; } catch (e) {}
 $('stars').textContent = stars;
 function addStar() { stars++; $('stars').textContent = stars; try { localStorage.setItem('mm_stars', String(stars)); } catch (e) {} }
 
-// 言えなかった表現を「べつの ばめん」で出し直すためのストック（動画をまたいで残る）
+// 答えられなかった質問は、次のクイズで もういちど きく（同じ動画のとき）
 function loadPending() { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch (e) { return []; } }
-function savePending(list) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(list.slice(-20))); } catch (e) {} }
+function savePending(list) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(list.slice(-30))); } catch (e) {} }
 
 function show(html) { $('card').innerHTML = html; $('ov').hidden = false; }
 function hide() { $('ov').hidden = true; }
@@ -144,14 +194,15 @@ if (!DATA || !DATA.breaks) {
   show('<div class="center"><p class="big">クイズが まだ ありません</p><p class="ja">subquiz.py で このファイルを つくると、どうがと クイズが はいります。</p></div>');
 } else if (location.protocol === 'file:') {
   show('<div class="center"><p class="big">このままでは うごきません</p><p class="ja">パソコンで ファイルを ちょくせつ ひらくと、どうがと マイクが つかえません。GitHub Pages など https の ばしょに おいてから ひらいてね。</p></div>');
-} else if (!SR) {
-  show('<div class="center"><p class="big">こえが つかえません</p><p class="ja">この アプリは こえで こたえます。iPad の Safari で ひらいてね。</p></div>');
+} else if (!SR || !window.speechSynthesis) {
+  show('<div class="center"><p class="big">こえが つかえません</p><p class="ja">iPad の Safari で ひらいてね。</p></div>');
 } else {
   $('title').textContent = DATA.title || 'みてまなぶ';
   DATA.breaks.sort((a, b) => a.time - b.time);
-  show('<div class="center"><p class="big">' + esc(DATA.title || '') + '</p>' +
-    '<p class="ja">5ふんごとに クイズが でるよ。えいごで いってみよう！</p>' +
-    '<button class="btn btn-orange" data-act="start" style="font-size:24px;min-height:64px;padding:0 44px">はじめる</button></div>');
+  show('<div class="center"><button class="round go" data-act="start" aria-label="はじめる" style="width:160px;height:160px">' + ICON.play + '</button>' +
+    (PARENT ? '<p class="ja">YouTube Premium の アカウントで みるには、さきに ログインしてね：<br>' +
+      '<a href="https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F" target="_blank" rel="noopener">YouTube に ログインする</a></p>' : '') +
+    '</div>');
   const s = document.createElement('script');
   s.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(s);
@@ -160,11 +211,8 @@ if (!DATA || !DATA.breaks) {
 window.onYouTubeIframeAPIReady = function () {
   player = new YT.Player('yt', {
     videoId: DATA.videoId,
-    playerVars: { controls: 0, rel: 0, playsinline: 1, fs: 0, disablekb: 1, iv_load_policy: 3, modestbranding: 1, cc_load_policy: 1, cc_lang_pref: 'en', origin: location.origin },
-    events: {
-      onReady: () => { ready = true; $('next').textContent = 'はじめるを おしてね'; },
-      onStateChange: onState
-    }
+    playerVars: { controls: 0, rel: 0, playsinline: 1, fs: 0, disablekb: 1, iv_load_policy: 3, modestbranding: 1, origin: location.origin },
+    events: { onReady: () => { ready = true; $('next').textContent = '▶'; }, onStateChange: onState }
   });
 };
 
@@ -178,6 +226,7 @@ function onState(e) {
   }
 }
 
+const adWatch = { t: -1, since: 0 };
 setInterval(() => {
   if (!ready || !player.getCurrentTime) return;
   const t = player.getCurrentTime(), d = player.getDuration() || 0;
@@ -188,12 +237,21 @@ setInterval(() => {
       $('marks').innerHTML = DATA.breaks.map((b, i) => '<div class="mark" id="mk' + i + '" style="left:' + Math.min(100, b.time / d * 100) + '%"></div>').join('');
     }
   }
+  // 広告の見分け：「再生中」なのに本編の時間が1.2秒以上進まない → 広告とみなして、スキップボタンを押せるようにする
+  const st = player.getPlayerState();
+  if (st === 1 && Math.abs(t - adWatch.t) < 0.05) { if (!adWatch.since) adWatch.since = Date.now(); }
+  else adWatch.since = 0;
+  adWatch.t = t;
+  const ad = adWatch.since && Date.now() - adWatch.since > 1200;
+  $('shield').style.pointerEvents = ad ? 'none' : 'auto';
+  if (ad) return;                               // 広告中は クイズの時間を数えない
+
   if (mode === 'watch') {
     const b = DATA.breaks[bi];
     if (b) {
-      $('next').textContent = 'つぎの クイズまで ' + fmt(b.time - t);
+      $('next').textContent = fmt(b.time - t);
       if (t >= b.time) { player.pauseVideo(); openQuiz(b); }
-    } else $('next').textContent = 'さいごまで みよう';
+    } else $('next').textContent = '';
   }
   if (mode === 'clip' && clip && t >= clip.end) endClip();
 }, 250);
@@ -204,235 +262,286 @@ $('playBtn').onclick = () => {
 };
 $('shield').onclick = $('playBtn').onclick;
 $('backBtn').onclick = () => { if (ready && mode === 'watch') player.seekTo(Math.max(0, player.getCurrentTime() - 10), true); };
+// 10秒 すすむ：つぎの クイズの ところまでしか すすめない（クイズを とばせない）
+$('fwdBtn').onclick = () => {
+  if (!ready || mode !== 'watch') return;
+  const t = player.getCurrentTime(), b = DATA.breaks[bi];
+  const limit = b ? b.time - 0.3 : (player.getDuration() || t) - 1;
+  const to = Math.min(t + 10, limit);
+  if (to > t) player.seekTo(to, true);
+};
 
 // ---------- クイズの組み立て ----------
-// 並び：いってみよう ×(REST_EVERY-1) → まねして いう ×1 → くりかえし。
-// 最初に、前に言えなかった表現の「べつの ばめん」を最大2問入れる。
 function buildQueue(b) {
-  const says = shuffle(b.questions.filter(q => q.kind === 'say'));
+  const asks = shuffle(b.questions.filter(q => q.kind === 'ask'));
   const reps = shuffle(b.questions.filter(q => q.kind === 'repeat'));
   const pending = loadPending();
-  const applies = pending.splice(0, 2).map(a => Object.assign({ kind: 'say', isApply: true }, a));
-  savePending(pending);
-  const out = applies.slice();
-  let si = 0, ri = 0;
-  while (si < says.length || ri < reps.length) {
-    for (let k = 0; k < REST_EVERY - 1 && si < says.length; k++) out.push(says[si++]);
+  const mine = pending.filter(p => p.videoId === DATA.videoId).slice(0, 1);
+  savePending(pending.filter(p => !mine.includes(p)));
+  const out = mine.map(p => Object.assign({ again: true }, p.q));
+  let ai = 0, ri = 0;
+  while (ai < asks.length || ri < reps.length) {
+    for (let k = 0; k < REST_EVERY - 1 && ai < asks.length; k++) out.push(asks[ai++]);
     if (ri < reps.length) out.push(reps[ri++]);
   }
   return out;
 }
 
-function fresh(q) { return { q, tries: 0, status: null, heard: null, hits: null, listening: false, heardModel: false, follow: false }; }
+function fresh(q) { return { q, tries: 0, status: null, heard: null, hits: null, listening: false, sawScene: false, follow: false }; }
 
 function openQuiz(b) {
   mode = 'quiz';
   const queue = buildQueue(b);
   if (!queue.length) { bi++; mode = 'watch'; player.playVideo(); return; }
-  quiz = { b, queue, idx: 0, good: 0, goal: Math.min(DATA.goal || 5, queue.length) };
+  quiz = { b, queue, idx: 0, good: 0, goal: Math.min(DATA.goal || 3, queue.filter(q => q.kind === 'ask').length || queue.length) };
   nextQuestion();
 }
 
 function nextQuestion() {
   if (quiz.idx >= quiz.queue.length) { quiz.queue = buildQueue(quiz.b); quiz.idx = 0; }
   quiz.cur = fresh(quiz.queue[quiz.idx++]);
+  presentQuestion();
+}
+
+// 出題：英語の質問は読み上げ、まねして いう は動画のその場面を流す
+async function presentQuestion() {
+  const c = quiz.cur;
   render();
+  if (c.q.kind === 'repeat' && !c.follow) {
+    busy = true; render();
+    await sleep(300);
+    await speak('Can you repeat this?');
+    busy = false;
+    playClip('intro');
+    return;
+  }
+  busy = true; render();
+  await sleep(300);
+  await speak(c.follow ? c.q.text : c.q.q);
+  busy = false; render();
 }
 
-// 言えなかった「いってみよう」を、おてほんを まねする問題に切りかえる
-function toFollow(c) {
-  const f = fresh({ kind: 'repeat', text: c.q.model, clip_start: c.q.clip_start, clip_end: c.q.clip_end });
-  f.follow = true;
-  return f;
-}
-
-// ---------- 画面 ----------
+// ---------- 画面（文字なし。?parent=1 のときだけ文字を出す） ----------
 function render() {
-  const c = quiz.cur, q = c.q, say = q.kind === 'say';
-  const max = say ? MAX_SAY : MAX_REPEAT;
-  const hasClip = q.clip_start != null;
-  let label, lcls = 'badge';
-  if (c.follow) { label = 'おてほんを まねしよう'; lcls = 'kind'; }
-  else if (say && q.isApply) label = 'べつの ばめんで いってみよう';
-  else if (say) label = 'いってみよう';
-  else { label = 'ひとやすみ ・ まねして いう'; lcls = 'kind'; }
+  const c = quiz.cur, q = c.q, ask = q.kind === 'ask' && !c.follow;
+  let h = '<div class="row" style="justify-content:center"><div class="dots">' +
+    Array.from({ length: quiz.goal }, (_, i) => '<div class="dot' + (i < quiz.good ? ' on' : '') + '" style="width:30px;height:30px"></div>').join('') + '</div></div>';
 
-  let h = '<div class="row"><span class="' + lcls + '">' + label + '</span>' +
-    '<div class="row" style="gap:10px"><span class="ja" style="margin:0">クリアまで</span><div class="dots">' +
-    Array.from({ length: quiz.goal }, (_, i) => '<div class="dot' + (i < quiz.good ? ' on' : '') + '"></div>').join('') + '</div></div></div>';
-
-  if (say) {
-    h += '<div><p class="ja" lang="en" style="margin:0 0 4px">Say it in English!</p><p class="q">' + esc(q.ja) + '</p></div>';
-  } else {
-    h += '<div><p class="ja" lang="en" style="margin:0 0 4px">Say it like the video!</p></div><div class="prompt" lang="en">\u201c' + esc(q.text) + '\u201d</div>';
-  }
-
-  if (c.heard !== null && !c.listening) {
-    if (say) {
-      h += '<div class="chips" lang="en"><span class="chip ' + (c.status === 'right' ? 'ok' : 'ng') + '">' + (c.heard ? esc(c.heard) : '（きこえなかったよ）') + '</span></div>';
-    } else {
-      h += '<div class="chips" lang="en">' + q.text.split(' ').map((w, i) => '<span class="chip ' + (c.hits[i] ? 'ok' : 'ng') + '">' + esc(w) + '</span>').join('') + '</div>';
-      h += '<div class="heard" lang="en">きこえた ことば：' + (c.heard ? esc(c.heard) : '（きこえなかったよ）') + '</div>';
-    }
-  }
-  if (say && c.status === 'right') {
-    h += '<div class="msg" style="background:#F1F7EE;color:#3F6212;justify-content:flex-start"><span>どうがでの いいかた</span><span lang="en" style="color:var(--ink);font-size:22px">' + esc(q.model) + '</span></div>';
-  }
-
-  if (!c.status) {
-    let txt = 'タップして えいごで はなそう', warn = false;
-    if (c.listening) txt = 'きいているよ… いいおわったら タップ';
-    else if (c.tries > 0 && say) { warn = true; txt = 'つたわらなかったみたい。いいかたを かえて もういちど（' + c.tries + '/' + max + '）'; }
-    else if (c.tries > 0) {
-      warn = true;
-      const missed = q.text.split(' ').filter((w, i) => !c.hits[i]);
-      txt = (missed.length ? '\u201c' + missed.join('\u201d \u201c') + '\u201d を きをつけて ' : '') + 'もういちど（' + c.tries + '/' + max + '）';
-    }
-    h += '<div class="mic-wrap"><div class="ring' + (c.listening ? ' on' : '') + '"><button class="mic" data-act="mic" aria-label="' + (c.listening ? 'はなし おわった' : 'タップして はなす') + '">' +
-      '<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>' +
-      '</button></div><div class="mic-text' + (warn ? ' warn' : '') + '">' + esc(txt) + '</div></div>';
-
-    // いってみよう は1回言うまで おてほん なし。まねして いう は いつでも きける
-    if (!c.listening && hasClip && (!say || c.tries > 0)) {
-      h += '<div class="row" style="justify-content:center"><button class="btn btn-soft" data-act="hint">' +
-        fmt(q.clip_start) + ' の おてほんを きく' + (say ? '（きくと カウントなし）' : '') + '</button></div>';
-    }
-  }
-  if (c.status === 'wrong') {
-    if (say) {
-      h += '<div class="msg ng"><span>むずかしかったね。おてほんを まねしてみよう</span><button class="btn btn-red" data-act="model">' +
-        (hasClip ? fmt(q.clip_start) + ' の おてほんを みる' : 'おてほんを みる') + '</button></div>';
-    } else {
-      h += '<div class="msg ng"><span>おしい！ おてほんを きいてから もういちど</span><button class="btn btn-red" data-act="retryRepeat">' +
-        (hasClip ? fmt(q.clip_start) + ' の おてほんを きく' : 'もういちど') + '</button></div>';
-    }
-  }
   if (c.status === 'right') {
-    let m;
-    if (c.follow) m = 'いえたね！ この いいかたは べつの ばめんで また でるよ';
-    else if (c.heardModel) m = 'いえたね！ おてほんを きいたので カウントは なし';
-    else if (say) m = 'Nice! じぶんの ことばで つたわったね';
-    else m = 'Nice! まねして いえたね';
-    h += '<div class="msg ok"><span>' + m + '</span><button class="btn btn-blue" data-act="next">つぎへ</button></div>';
+    h += '<div class="result">' + ICON.ok + '</div>';
+  } else {
+    h += '<div class="stage-row">';
+    h += '<div><button class="round speak" data-act="listen" aria-label="もういちど きく"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.speak + '</button><div class="icon-label">きく</div></div>';
+    h += '<div><div class="ring' + (c.listening && c.micOpen ? ' on' : '') + ((busy || (c.listening && !c.micOpen)) ? ' wait' : '') + '"><button class="mic" data-act="mic" aria-label="はなす"' + (busy ? ' disabled' : '') + '>' + ICON.mic + '</button></div><div class="icon-label">はなす</div></div>';
+    if (ask && c.tries > 0 && !c.sawScene) {
+      h += '<div><button class="round scene" data-act="scene" aria-label="ばめんを みる"' + (busy ? ' disabled style="opacity:.5"' : '') + '>' + ICON.scene + '</button><div class="icon-label">みる</div></div>';
+    }
+    h += '</div>';
+    if (c.tries > 0 && !c.listening && !busy) h += '<div class="result">' + ICON.again + '</div>';
+  }
+
+  if (PARENT) {
+    h += '<div class="parent">' + (ask ? 'Q: ' + esc(q.q) + '<br>' : '') +
+      (q.kind === 'repeat' || c.follow ? 'まねする文: ' + esc(c.follow ? q.text : q.text) + '<br>' : '') +
+      (q.model ? 'おてほん: ' + esc(q.model) + '<br>' : '') +
+      (c.heard !== null ? 'きこえた: ' + esc(c.heard || '（なし）') + '<br>' : '') +
+      (c.listening ? 'きいてる: ' + esc(liveText || '…') + '<br>' : '') +
+      (lastErr ? 'エラー: ' + esc(lastErr) + '<br>' : '') +
+      (evLog.length ? 'きろく: ' + esc(evLog.join(' → ')) + '<br>' : '') +
+      'ためした: ' + c.tries + (c.sawScene ? '（ばめんを みた）' : '') + (q.again ? '（まえに こたえられなかった もんだい）' : '') + '</div>';
   }
   show(h);
 }
 
 // ---------- 判定 ----------
 function judge(alts) {
-  const c = quiz.cur, q = c.q, say = q.kind === 'say';
+  const c = quiz.cur, q = c.q, ask = q.kind === 'ask' && !c.follow;
   c.tries++;
-  let pass = false;
-  if (say) {
+  if (ask) {
     c.heard = alts[0] || '';
-    pass = alts.some(a => { const hw = ' ' + words(a).join(' ') + ' '; return q.accept.some(x => hw.includes(' ' + words(x).join(' ') + ' ')); });
-  } else {
-    const tokens = q.text.split(' ');
-    const owner = [], target = [];
-    tokens.forEach((tk, ti) => words(tk).forEach(w => { target.push(w); owner.push(ti); }));
-    let best = null, bestN = -1;
-    (alts.length ? alts : ['']).forEach(a => {
-      const hw = words(a); let p = 0;
-      const hits = target.map(t => { const k = hw.indexOf(t, p); if (k >= 0) { p = k + 1; return true; } return false; });
-      const n = hits.filter(Boolean).length;
-      if (n > bestN) { bestN = n; best = { a, hits }; }
-    });
-    // 画面の単語（句読点つき）ごとに、中の単語がぜんぶ聞き取れたかで色分け
-    c.hits = tokens.map((tk, ti) => target.every((w, k) => owner[k] !== ti || best.hits[k]));
-    c.heard = best.a;
-    pass = bestN / target.length >= PASS_RATIO;
+    return alts.some(a => { const hw = ' ' + words(a).join(' ') + ' '; return q.accept.some(x => hw.includes(' ' + words(x).join(' ') + ' ')); });
   }
-  const max = say ? MAX_SAY : MAX_REPEAT;
+  const target = words(q.text);
+  let bestN = -1, bestA = '';
+  (alts.length ? alts : ['']).forEach(a => {
+    const hw = words(a); let p = 0, n = 0;
+    target.forEach(t => { const k = hw.indexOf(t, p); if (k >= 0) { p = k + 1; n++; } });
+    if (n > bestN) { bestN = n; bestA = a; }
+  });
+  c.heard = bestA;
+  return bestN / target.length >= PASS_RATIO;
+}
+
+async function afterAnswer(pass) {
+  const c = quiz.cur, q = c.q, ask = q.kind === 'ask' && !c.follow;
+  busy = true;
   if (pass) {
     c.status = 'right';
-    if (!c.follow && !c.heardModel) { quiz.good++; addStar(); }
-  } else if (c.tries >= max) c.status = 'wrong';
-
-  // 自力で言えなかった表現は、べつの ばめんの問題をストックしておく
-  if (say && !c.follow && (c.status === 'wrong' || (pass && c.heardModel)) && q.apply && q.apply.length) {
-    const p = loadPending();
-    q.apply.forEach(a => p.push({ ja: a.ja, model: a.model, accept: a.accept, apply: [] }));
-    savePending(p);
+    const counts = !c.follow && !(ask && c.sawScene);
+    if (counts) { quiz.good++; addStar(); }
+    render();
+    await speak(ask && q.model ? 'Great job! ' + q.model : 'Great job!');
+    busy = false;
+    return goNext();
   }
+  const max = ask ? MAX_ASK : MAX_REPEAT;
+  if (c.tries < max) {
+    render();
+    await speak(ask ? 'Hmm. Try again!' : 'Almost! Try again!');
+    busy = false; render();
+    if (!ask && !c.follow) playClip('intro');
+    return;
+  }
+  if (!ask) {                                   // まねして いう は ダメでも先へ
+    await speak('Good try!');
+    busy = false;
+    return goNext();
+  }
+  // 質問に答えられなかった：場面を見て、おてほんを まねする。次のクイズで もういちど きく
+  const p = loadPending(); p.push({ videoId: DATA.videoId, q }); savePending(p);
+  await speak("Let's watch it again.");
+  busy = false;
+  playClip('model');
+}
+
+// 声が入らなかった（マイクの不調・話すのが早すぎた など）ときは、回数に数えずにやり直し
+async function noInput() {
+  busy = true; render();
+  await speak("I can't hear you. Say it again!");
+  busy = false; render();
+}
+
+function goNext() {
+  if (quiz.good >= quiz.goal) clearScreen(); else nextQuestion();
 }
 
 function startListening() {
   const c = quiz.cur;
+  speechSynthesis.cancel();
+  lastErr = ''; liveText = ''; evLog = []; evT0 = Date.now();
+  c.micOpen = false;
   rec = new SR();
-  rec.lang = 'en-US'; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 5;
-  let got = null;
-  rec.onresult = e => { got = Array.from(e.results[0]).map(a => a.transcript); };
-  rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') got = 'denied'; };
+  rec.lang = 'en-US';
+  rec.continuous = true;        // iPad は 1回きりモードだと すぐ切れることがあるので、つづけて聞く
+  rec.interimResults = true;    // とちゅうの結果も受けとる（iPad は最後の結果が来ないことがある）
+  let got = [], silence = null, denied = false, stopped = false;
+  const stopSoon = ms => { clearTimeout(silence); silence = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, ms); };
+  const hardStop = setTimeout(() => { if (rec && !stopped) { stopped = true; rec.stop(); } }, 9000);
+  const opened = name => { logEv(name); if (!c.micOpen) { c.micOpen = true; render(); } };
+  rec.onstart = () => logEv('start');
+  rec.onaudiostart = () => opened('マイク ON');
+  rec.onsoundstart = () => opened('音を検知');
+  rec.onspeechstart = () => opened('声を検知');
+  rec.onspeechend = () => logEv('声 おわり');
+  rec.onresult = e => {
+    logEv('結果');
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' ';
+    liveText = t.trim();
+    got = liveText ? [liveText] : [];
+    if (PARENT) render();
+    stopSoon(1500);             // 話しおわって 1.5秒 しずかなら 終わり
+  };
+  rec.onerror = e => {
+    lastErr = e.error || 'unknown';
+    logEv('エラー ' + lastErr);
+    if (lastErr === 'not-allowed' || lastErr === 'service-not-allowed' || lastErr === 'audio-capture') denied = true;
+  };
   rec.onend = () => {
+    logEv('end');
+    clearTimeout(silence); clearTimeout(hardStop);
     rec = null; c.listening = false;
-    if (got === 'denied') {
-      show('<div class="center"><p class="big">マイクが つかえません</p><p class="ja">iPad の せってい → Safari → マイク を「許可」にして、ページを ひらきなおしてね。</p><button class="btn btn-blue" data-act="back">クイズに もどる</button></div>');
+    if (denied) {
+      show('<div class="center"><p class="big">マイクが つかえません</p><p class="ja">' +
+        (lastErr === 'service-not-allowed'
+          ? 'iPad の せってい → 一般 → キーボード →「音声入力」を オンにしてね。'
+          : 'iPad の せってい → アプリ → Safari → マイク を「許可」にして、ページを ひらきなおしてね。') +
+        '（' + esc(lastErr) + '）</p><button class="btn btn-blue" data-act="back">もどる</button></div>');
       return;
     }
-    judge(got || []);
-    render();
+    if (!got.length || !got[0].trim()) { noInput(); return; }
+    afterAnswer(judge(got));
   };
   c.listening = true;
   render();
-  try { rec.start(); } catch (e) { c.listening = false; render(); }
+  setTimeout(() => {            // 読み上げ・動画の音が止まってから マイクを開く
+    try {
+      rec.start(); stopSoon(6000);           // 6秒 なにも聞こえなければ 終わり
+      setTimeout(() => { if (c.listening && !c.micOpen) { c.micOpen = true; render(); } }, 800);
+    }
+    catch (e) { lastErr = 'start-failed'; c.listening = false; rec = null; render(); }
+  }, 250);
 }
 
-// ---------- おてほん（動画の場面）を流す ----------
+// ---------- 動画の場面を流す ----------
 function playClip(after) {
   const q = quiz.cur.q;
-  if (q.clip_start == null) { afterClip(after); render(); return; }
   clip = { start: q.clip_start, end: q.clip_end, after };
   mode = 'clip'; hide();
-  $('cliptag').hidden = false;
   player.seekTo(clip.start, true);
   player.playVideo();
 }
-function afterClip(after) {
-  const c = quiz.cur;
-  if (after === 'hint') c.heardModel = c.heardModel || c.q.kind === 'say';
-  if (after === 'model') quiz.cur = toFollow(c);
-  if (after === 'retryRepeat') { const f = fresh(c.q); f.follow = c.follow; f.heardModel = true; quiz.cur = f; }
-}
-function endClip() {
+async function endClip() {
+  if (!clip) return;
   player.pauseVideo();
   $('cliptag').hidden = true;
   mode = 'quiz';
-  afterClip(clip.after);
-  clip = null;
-  render();
+  const after = clip.after; clip = null;
+  const c = quiz.cur;
+  if (after === 'intro') { render(); return; }
+  if (after === 'scene') { c.sawScene = true; busy = true; render(); await speak(c.q.q); busy = false; render(); return; }
+  if (after === 'model') {
+    const f = fresh({ kind: 'repeat', text: c.q.model, clip_start: c.q.clip_start, clip_end: c.q.clip_end });
+    f.follow = true;
+    quiz.cur = f;
+    busy = true; render();
+    await speak('Say it with me. ' + c.q.model);
+    busy = false; render();
+  }
 }
 
 function clearScreen() {
   const m = $('mk' + bi); if (m) m.classList.add('done');
-  show('<div class="center"><div class="row" style="justify-content:center">' +
-    '<svg width="70" height="70" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="#F5B300"/></svg>'.repeat(3) +
-    '</div><p class="big">Great job! クリア！</p><button class="btn btn-orange" data-act="resume" style="font-size:24px;min-height:64px;padding:0 44px">つづきを みる</button></div>');
+  show('<div class="center"><div class="row" style="justify-content:center">' + ICON.ok.repeat(3) + '</div>' +
+    '<button class="round go" data-act="resume" aria-label="つづきを みる" style="width:150px;height:150px">' + ICON.play + '</button></div>');
+  speak('You did it! Let\u2019s keep watching!');
 }
 function endScreen() {
   mode = 'end';
-  show('<div class="center"><p class="big">おしまい！</p><p class="ja">あつめた ほし：' + stars + '</p><button class="btn btn-blue" data-act="again">さいしょから みる</button></div>');
+  show('<div class="center"><div class="row" style="justify-content:center">' + ICON.ok + '</div><p class="big">' + stars + '</p>' +
+    '<button class="round go" data-act="again" aria-label="さいしょから みる">' + ICON.play + '</button></div>');
+  speak('The end! Great watching!');
 }
 
 // ---------- ボタン ----------
 $('card').addEventListener('click', e => {
   const btn = e.target.closest('[data-act]');
-  if (!btn) return;
+  if (!btn || btn.disabled) return;
   const c = quiz && quiz.cur;
   switch (btn.dataset.act) {
-    case 'start': if (!ready) return; hide(); mode = 'watch'; player.playVideo(); break;
-    case 'mic': if (c.status) return; if (c.listening) { if (rec) rec.stop(); } else startListening(); break;
-    case 'hint': playClip('hint'); break;
-    case 'model': playClip('model'); break;
-    case 'retryRepeat': playClip('retryRepeat'); break;
+    case 'start':
+      if (!ready) return;
+      speak("Let's watch!");                     // 最初のタップで 読み上げを有効にする（iPad の決まり）
+      hide(); mode = 'watch'; player.playVideo(); break;
+    case 'listen':
+      if (c.q.kind === 'repeat' && !c.follow) playClip('intro');
+      else { busy = true; render(); speak(c.follow ? c.q.text : c.q.q).then(() => { busy = false; render(); }); }
+      break;
+    case 'mic':
+      if (c.status) return;
+      if (c.listening) { if (rec) rec.stop(); } else startListening();
+      break;
+    case 'scene': playClip('scene'); break;
     case 'back': render(); break;
-    case 'next': if (quiz.good >= quiz.goal) clearScreen(); else nextQuestion(); break;
     case 'resume':
+      speechSynthesis.cancel();
       bi++; mode = 'watch'; hide();
       if (player.getPlayerState() === 0 || player.getCurrentTime() >= player.getDuration() - 0.5) {
         if (DATA.breaks[bi]) openQuiz(DATA.breaks[bi]); else endScreen();
       } else player.playVideo();
       break;
     case 'again':
+      speechSynthesis.cancel();
       bi = 0; mode = 'watch'; hide();
       document.querySelectorAll('.mark.done').forEach(m => m.classList.remove('done'));
       player.seekTo(0, true); player.playVideo(); break;
